@@ -410,3 +410,42 @@ class AsyncTemplate:
 
         """
         raise NotImplementedError(f"kill not implemented for: {self}")
+
+    async def begin_transaction(self) -> None:
+        """Begin a new database transaction.
+        
+        Example:
+            await db.begin_transaction()
+        """
+        raise NotImplementedError(f"begin_transaction not implemented for: {self}")
+
+    async def commit_transaction(self) -> None:
+        """Commit the current transaction.
+        
+        Example:
+            await db.commit_transaction()
+        """
+        raise NotImplementedError(f"commit_transaction not implemented for: {self}")
+
+    async def rollback_transaction(self) -> None:
+        """Rollback the current transaction.
+        
+        Example:
+            await db.rollback_transaction()
+        """
+        raise NotImplementedError(f"rollback_transaction not implemented for: {self}")
+
+    def transaction(self) -> "AsyncTransaction":
+        """Create a transaction context manager.
+        
+        Returns:
+            An AsyncTransaction context manager that handles automatic
+            commit on success and rollback on exceptions.
+        
+        Example:
+            async with db.transaction() as tx:
+                await tx.create("user:john", {"name": "John"})
+                await tx.create("user:jane", {"name": "Jane"})
+        """
+        from surrealdb.connections.transaction import AsyncTransaction
+        return AsyncTransaction(self)

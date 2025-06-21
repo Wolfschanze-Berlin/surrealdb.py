@@ -311,3 +311,18 @@ class BlockingWsSurrealConnection(SyncTemplate, UtilsMixin):
         """
         if self.socket is not None:
             self.socket.close()
+
+    def begin_transaction(self) -> None:
+        """Begin a new database transaction."""
+        message = RequestMessage(RequestMethod.BEGIN)
+        self._send(message, "beginning transaction")
+
+    def commit_transaction(self) -> None:
+        """Commit the current transaction."""
+        message = RequestMessage(RequestMethod.COMMIT)
+        self._send(message, "committing transaction")
+
+    def rollback_transaction(self) -> None:
+        """Rollback the current transaction."""
+        message = RequestMessage(RequestMethod.CANCEL)
+        self._send(message, "rolling back transaction")

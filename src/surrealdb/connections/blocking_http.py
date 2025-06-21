@@ -251,3 +251,21 @@ class BlockingHttpSurrealConnection(SyncTemplate, UtilsMixin):
         """
         if hasattr(self, "session"):
             self.session.close()
+
+    def begin_transaction(self) -> None:
+        """Begin a new database transaction."""
+        message = RequestMessage(RequestMethod.BEGIN)
+        self.id = message.id
+        self._send(message, "beginning transaction")
+
+    def commit_transaction(self) -> None:
+        """Commit the current transaction."""
+        message = RequestMessage(RequestMethod.COMMIT)
+        self.id = message.id
+        self._send(message, "committing transaction")
+
+    def rollback_transaction(self) -> None:
+        """Rollback the current transaction."""
+        message = RequestMessage(RequestMethod.CANCEL)
+        self.id = message.id
+        self._send(message, "rolling back transaction")
