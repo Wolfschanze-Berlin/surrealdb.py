@@ -409,3 +409,42 @@ class SyncTemplate:
 
         """
         raise NotImplementedError(f"kill not implemented for: {self}")
+
+    def begin_transaction(self) -> None:
+        """Begin a new database transaction.
+        
+        Example:
+            db.begin_transaction()
+        """
+        raise NotImplementedError(f"begin_transaction not implemented for: {self}")
+
+    def commit_transaction(self) -> None:
+        """Commit the current transaction.
+        
+        Example:
+            db.commit_transaction()
+        """
+        raise NotImplementedError(f"commit_transaction not implemented for: {self}")
+
+    def rollback_transaction(self) -> None:
+        """Rollback the current transaction.
+        
+        Example:
+            db.rollback_transaction()
+        """
+        raise NotImplementedError(f"rollback_transaction not implemented for: {self}")
+
+    def transaction(self) -> "SyncTransaction":
+        """Create a transaction context manager.
+        
+        Returns:
+            A SyncTransaction context manager that handles automatic
+            commit on success and rollback on exceptions.
+        
+        Example:
+            with db.transaction() as tx:
+                tx.create("user:john", {"name": "John"})
+                tx.create("user:jane", {"name": "Jane"})
+        """
+        from surrealdb.connections.transaction import SyncTransaction
+        return SyncTransaction(self)

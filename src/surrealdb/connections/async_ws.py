@@ -330,3 +330,18 @@ class AsyncWsSurrealConnection(AsyncTemplate, UtilsMixin):
         Closes the websocket connection upon exiting the context.
         """
         await self.close()
+
+    async def begin_transaction(self) -> None:
+        """Begin a new database transaction."""
+        message = RequestMessage(RequestMethod.BEGIN)
+        await self._send(message, "beginning transaction")
+
+    async def commit_transaction(self) -> None:
+        """Commit the current transaction."""
+        message = RequestMessage(RequestMethod.COMMIT)
+        await self._send(message, "committing transaction")
+
+    async def rollback_transaction(self) -> None:
+        """Rollback the current transaction."""
+        message = RequestMessage(RequestMethod.CANCEL)
+        await self._send(message, "rolling back transaction")

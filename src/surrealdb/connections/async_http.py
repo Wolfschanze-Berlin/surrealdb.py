@@ -300,3 +300,21 @@ class AsyncHttpSurrealConnection(AsyncTemplate, UtilsMixin):
         """
         if hasattr(self, "_session"):
             await self._session.close()
+
+    async def begin_transaction(self) -> None:
+        """Begin a new database transaction."""
+        message = RequestMessage(RequestMethod.BEGIN)
+        self.id = message.id
+        await self._send(message, "beginning transaction")
+
+    async def commit_transaction(self) -> None:
+        """Commit the current transaction."""
+        message = RequestMessage(RequestMethod.COMMIT)
+        self.id = message.id
+        await self._send(message, "committing transaction")
+
+    async def rollback_transaction(self) -> None:
+        """Rollback the current transaction."""
+        message = RequestMessage(RequestMethod.CANCEL)
+        self.id = message.id
+        await self._send(message, "rolling back transaction")

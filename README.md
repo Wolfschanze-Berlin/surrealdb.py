@@ -126,6 +126,52 @@ with Surreal("ws://localhost:8000/rpc") as db:
     print(db.query("delete person"))
 ```
 
+## Working with Transactions
+
+The SDK provides Pythonic transaction management with automatic commit/rollback functionality:
+
+```python
+from surrealdb import Surreal
+
+with Surreal("ws://localhost:8000/rpc") as db:
+    db.signin({"username": 'root', "password": 'root'})
+    db.use("namespace_test", "database_test")
+    
+    # Context manager approach (recommended)
+    with db.transaction() as tx:
+        # All operations are part of the transaction
+        tx.create("user:john", {"name": "John", "balance": 1000})
+        tx.create("user:jane", {"name": "Jane", "balance": 500})
+        # Automatic commit on success, rollback on exception
+    
+    # Manual transaction control
+    db.begin_transaction()
+    try:
+        db.update("user:john", {"balance": 800})
+        db.update("user:jane", {"balance": 700})
+        db.commit_transaction()
+    except Exception:
+        db.rollback_transaction()
+```
+
+For async operations, use `AsyncSurreal` with `async with`:
+
+```python
+import asyncio
+from surrealdb import AsyncSurreal
+
+async def example():
+    async with AsyncSurreal("ws://localhost:8000/rpc") as db:
+        await db.signin({"username": 'root', "password": 'root'})
+        await db.use("namespace_test", "database_test")
+        
+        async with db.transaction() as tx:
+            await tx.create("account:savings", {"balance": 1000})
+            await tx.create("account:checking", {"balance": 500})
+
+asyncio.run(example())
+```
+
 ## Next steps
 
 Now that you have learned the basics of the SurrealDB SDK for Python, you can learn more about the SDK and its methods [in the methods section](https://surrealdb.com/docs/sdk/python/methods) and [data types section](https://surrealdb.com/docs/sdk/python/data-types).
