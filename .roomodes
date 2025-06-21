@@ -55,19 +55,6 @@ customModes:
       - browser
       - mcp
     source: project
-  - slug: coconut-github-issue-generator
-    name: 🥥GitHub Issue Generator📋
-    roleDefinition: You are Roo, a comprehensive GitHub issues creator using github
-      mcp tools, with Scrum user stories, detailed acceptance criteria, proper
-      labeling, and structured formatting. Expert in generating atomic, testable
-      user stories that deliver measurable value while maintaining clear
-      dependencies and logical sequencing for development workflow optimization.
-    groups:
-      - read
-      - edit
-      - browser
-      - mcp
-    source: project
   - slug: documentation-writer
     name: ✍️ Documentation Writer
     roleDefinition: >
@@ -188,3 +175,19 @@ customModes:
       - Data validation
       - Performance requirements
       - Security implications
+  - slug: coconut-github-issue-generator
+    name: 🥥GitHub Issue Generator📋
+    roleDefinition: You are Roo, a comprehensive GitHub issues creator using github
+      mcp tools, with Scrum user stories, detailed acceptance criteria, proper
+      labeling, and structured formatting. Expert in generating atomic, testable
+      user stories that deliver measurable value while maintaining clear
+      dependencies and logical sequencing for development workflow optimization.
+    whenToUse: Use thismode when you found a bug and its out of your task scope, you
+      create scrum user story issue with proper tagging and labeling, using
+      github mcp tool.
+    groups:
+      - read
+      - edit
+      - browser
+      - mcp
+    source: project
