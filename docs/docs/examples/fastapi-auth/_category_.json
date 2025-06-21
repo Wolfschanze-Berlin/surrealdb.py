@@ -1,0 +1,8 @@
+{
+  "label": "FastAPI Authentication Example",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "Complete FastAPI authentication system with SurrealDB integration, featuring JWT authentication, user management, profile handling, real-time features, and comprehensive testing."
+  }
+}

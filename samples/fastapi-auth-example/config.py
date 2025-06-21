@@ -9,7 +9,7 @@ class Settings:
     """Application configuration settings."""
     
     # SurrealDB Settings
-    SURREALDB_URL: str = os.getenv("SURREALDB_URL", "ws://localhost:8000/rpc")
+    SURREALDB_URL: str = os.getenv("SURREALDB_URL", "ws://localhost:8001/rpc")
     SURREALDB_NAMESPACE: str = os.getenv("SURREALDB_NAMESPACE", "test")
     SURREALDB_DATABASE: str = os.getenv("SURREALDB_DATABASE", "test")
     SURREALDB_USERNAME: str = os.getenv("SURREALDB_USERNAME", "root")
