@@ -5,6 +5,17 @@ from surrealdb.connections.blocking_ws import BlockingWsSurrealConnection
 
 class TestBlockingWsTransactions(TestCase):
 
+    def verify_query_result(self, query, expected_length, expected_names=None):
+        """Helper to verify query results."""
+        result = self.connection.query(query)
+        self.assertEqual(len(result), expected_length)
+        if expected_names:
+            for i, name in enumerate(expected_names):
+                self.assertEqual(result[i]["name"], name)
+
+    def cleanup_transaction_test(self):
+        """Helper to clean up the transaction_test table."""
+        self.connection.query("DELETE transaction_test;")
     def setUp(self):
         self.url = "ws://localhost:8000/rpc"
         self.password = "root"
