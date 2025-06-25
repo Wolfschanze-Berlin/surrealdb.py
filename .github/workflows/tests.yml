@@ -16,7 +16,7 @@ concurrency:
   
 jobs:
   run-unit-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-big
     strategy:
       fail-fast: false
       matrix:
