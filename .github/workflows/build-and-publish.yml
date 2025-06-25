@@ -32,7 +32,7 @@ permissions:
 
 jobs:
   determine-environment:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-big
     outputs:
       environment: ${{ steps.env.outputs.environment }}
       version_suffix: ${{ steps.env.outputs.version_suffix }}
@@ -81,7 +81,7 @@ jobs:
 
   build:
     needs: [determine-environment, run-tests, run-stability]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-big
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -128,7 +128,7 @@ jobs:
   publish:
     needs: [determine-environment, build]
     if: ${{ needs.determine-environment.outputs.should_publish == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-big
     environment:
       name: ${{ needs.determine-environment.outputs.environment }}
       url: ${{ needs.determine-environment.outputs.pypi_url }}
@@ -151,7 +151,7 @@ jobs:
 
   post-publish-validation:
     needs: [determine-environment, publish]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-big
     steps:
       - name: Wait for package availability
         run: sleep 30
