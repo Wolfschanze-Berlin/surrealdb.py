@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Dict, List, Optional, Union, TYPE_CHECKING
 from surrealdb.data.types.record_id import RecordID
 from surrealdb.data.types.table import Table
 

@@ -1,0 +1,130 @@
+name: Validate Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to validate'
+        required: true
+        type: string
+
+jobs:
+  validate-release:
+    runs-on: ubuntu-big
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name || github.event.release.tag_name }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Validate tag and version consistency
+        run: |
+          TAG_NAME="${{ inputs.tag_name || github.event.release.tag_name }}"
+          
+          # Extract version from tag (remove 'v' prefix if present)
+          TAG_VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          
+          # Get version from pyproject.toml
+          TOML_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          
+          # Get version from __init__.py
+          INIT_VERSION=$(grep '__version__ = ' src/surrealdb/__init__.py | sed 's/__version__ = "\(.*\)"/\1/')
+          
+          echo "Tag version: $TAG_VERSION"
+          echo "pyproject.toml version: $TOML_VERSION"
+          echo "__init__.py version: $INIT_VERSION"
+          
+          if [[ "$TAG_VERSION" != "$TOML_VERSION" ]]; then
+            echo "Error: Tag version ($TAG_VERSION) doesn't match pyproject.toml version ($TOML_VERSION)"
+            exit 1
+          fi
+          
+          if [[ "$TAG_VERSION" != "$INIT_VERSION" ]]; then
+            echo "Error: Tag version ($TAG_VERSION) doesn't match __init__.py version ($INIT_VERSION)"
+            exit 1
+          fi
+          
+          echo "Version consistency check passed"
+
+      - name: Validate GitHub release
+        run: |
+          TAG_NAME="${{ inputs.tag_name || github.event.release.tag_name }}"
+          
+          # Check if GitHub release exists
+          RELEASE_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                        "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
+          
+          if echo "$RELEASE_INFO" | grep -q '"message": "Not Found"'; then
+            echo "Error: GitHub release for tag $TAG_NAME not found"
+            exit 1
+          fi
+          
+          echo "GitHub release validation passed"
+
+      - name: Wait for PyPI availability
+        run: |
+          TAG_NAME="${{ inputs.tag_name || github.event.release.tag_name }}"
+          TAG_VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          
+          echo "Waiting for package to become available on PyPI..."
+          for i in {1..12}; do  # Wait up to 6 minutes
+            if pip index versions surrealdb 2>/dev/null | grep -q "$TAG_VERSION"; then
+              echo "Package version $TAG_VERSION found on PyPI"
+              break
+            fi
+            echo "Attempt $i: Package not yet available, waiting 30 seconds..."
+            sleep 30
+          done
+
+      - name: Test PyPI installation
+        run: |
+          TAG_NAME="${{ inputs.tag_name || github.event.release.tag_name }}"
+          TAG_VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          
+          # Create a temporary virtual environment
+          python -m venv test_env
+          source test_env/bin/activate
+          
+          # Install the specific version from PyPI
+          pip install "surrealdb==$TAG_VERSION" --no-cache-dir
+          
+          # Test import and version
+          python -c "
+          import surrealdb
+          print(f'Installed version: {surrealdb.__version__}')
+          assert surrealdb.__version__ == '$TAG_VERSION', f'Version mismatch: expected $TAG_VERSION, got {surrealdb.__version__}'
+          print('PyPI installation validation passed')
+          "
+
+      - name: Test package functionality
+        run: |
+          TAG_NAME="${{ inputs.tag_name || github.event.release.tag_name }}"
+          TAG_VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          
+          source test_env/bin/activate
+          
+          # Basic functionality test
+          python -c "
+          import surrealdb
+          from surrealdb.data.types.record_id import RecordID
+          from surrealdb.data.types.table import Table
+          
+          # Test basic imports and class instantiation
+          record_id = RecordID(table='test', id='123')
+          table = Table('test_table')
+          
+          print('Basic functionality test passed')
+          "
+
+      - name: Notify on validation failure
+        if: failure()
+        run: |
+          echo "Release validation failed for tag ${{ inputs.tag_name || github.event.release.tag_name }}"
+          echo "Please investigate the issue and consider rolling back if necessary"

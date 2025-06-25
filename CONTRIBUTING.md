@@ -186,6 +186,93 @@ Sending feedback is a great way for us to understand your different use cases of
 
 Submitting [documentation](https://surrealdb.com/docs) updates, enhancements, designs, or bug fixes, and fixing any spelling or grammar errors will be very much appreciated.
 
+## Release Process
+
+This project uses an automated release workflow powered by [Release Please](https://github.com/googleapis/release-please) and multi-environment publishing strategy.
+
+### Conventional Commits
+
+All commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification to enable automatic version bumping and changelog generation:
+
+- `feat:` - New features (minor version bump)
+- `fix:` - Bug fixes (patch version bump)
+- `feat!:` or `fix!:` - Breaking changes (major version bump)
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, etc.)
+- `refactor:` - Code refactoring
+- `test:` - Adding or updating tests
+- `chore:` - Maintenance tasks
+- `ci:` - CI/CD changes
+- `perf:` - Performance improvements
+- `revert:` - Reverting previous commits
+
+**Examples:**
+```
+feat: add support for new SurrealDB authentication method
+fix: resolve connection timeout issue in WebSocket client
+docs: update installation instructions for Python 3.13
+feat!: remove deprecated legacy connection methods
+```
+
+### Multi-Environment Release Strategy
+
+#### Development Environment (`dev` branch)
+- **Trigger**: Push to `dev` branch
+- **Version**: Current version + `.dev{run_number}` (e.g., `1.0.4.dev123`)
+- **Destination**: [Test PyPI](https://test.pypi.org/)
+- **Purpose**: Development builds and testing
+
+#### Pre-Production Environment (`pre-prod` branch)
+- **Trigger**: Push to `pre-prod` branch  
+- **Version**: Current version + `rc{run_number}` (e.g., `1.0.4rc1`)
+- **Destination**: [Test PyPI](https://test.pypi.org/)
+- **Purpose**: Release candidates and staging validation
+
+#### Production Environment (`main` branch)
+- **Trigger**: Release Please creates a release
+- **Version**: Semantic version (e.g., `1.0.5`)
+- **Destination**: [PyPI](https://pypi.org/)
+- **Purpose**: Stable releases for end users
+
+### Release Workflow
+
+1. **Development**: 
+   - Create feature branches from `dev`
+   - Use conventional commits
+   - Test changes in development environment
+
+2. **Pre-Production**:
+   - Merge `dev` to `pre-prod` for release candidate testing
+   - Validate release candidates on Test PyPI
+
+3. **Production Release**:
+   - Merge `pre-prod` to `main`
+   - Release Please automatically creates a release PR
+   - Review and merge the release PR
+   - Automated build and publish to PyPI
+   - Post-release validation ensures package availability
+
+### Manual Release (Emergency)
+
+For emergency releases, you can manually trigger workflows:
+
+1. Go to Actions → "Build and Publish"
+2. Click "Run workflow"
+3. Select environment and provide necessary inputs
+4. Monitor the release validation workflow
+
+### Package Installation Testing
+
+Test development versions:
+```bash
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ surrealdb
+```
+
+Test production versions:
+```bash
+pip install surrealdb
+```
+
 ### Joining our community
 
 Join the growing [SurrealDB Community](https://surrealdb.com/community) around the world, for help, ideas, and discussions regarding SurrealDB.

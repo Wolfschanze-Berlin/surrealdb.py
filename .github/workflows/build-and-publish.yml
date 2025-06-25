@@ -1,0 +1,176 @@
+name: Build and Publish
+
+on:
+  push:
+    branches:
+      - dev
+      - pre-prod
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to (dev, pre-prod, production)'
+        required: true
+        type: string
+      tag_name:
+        description: 'Tag name for production releases'
+        required: false
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - pre-prod
+          - production
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC
+
+jobs:
+  determine-environment:
+    runs-on: ubuntu-big
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      version_suffix: ${{ steps.env.outputs.version_suffix }}
+      pypi_url: ${{ steps.env.outputs.pypi_url }}
+      should_publish: ${{ steps.env.outputs.should_publish }}
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ inputs.environment }}" != "" ]]; then
+            ENV="${{ inputs.environment }}"
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            ENV="dev"
+          elif [[ "${{ github.ref }}" == "refs/heads/pre-prod" ]]; then
+            ENV="pre-prod"
+          else
+            ENV="production"
+          fi
+          
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          
+          case $ENV in
+            dev)
+              echo "version_suffix=.dev${{ github.run_number }}" >> $GITHUB_OUTPUT
+              echo "pypi_url=https://test.pypi.org/legacy/" >> $GITHUB_OUTPUT
+              echo "should_publish=true" >> $GITHUB_OUTPUT
+              ;;
+            pre-prod)
+              echo "version_suffix=rc${{ github.run_number }}" >> $GITHUB_OUTPUT
+              echo "pypi_url=https://test.pypi.org/legacy/" >> $GITHUB_OUTPUT
+              echo "should_publish=true" >> $GITHUB_OUTPUT
+              ;;
+            production)
+              echo "version_suffix=" >> $GITHUB_OUTPUT
+              echo "pypi_url=https://upload.pypi.org/legacy/" >> $GITHUB_OUTPUT
+              echo "should_publish=true" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+  # Run existing tests and stability checks before building
+  run-tests:
+    uses: ./.github/workflows/tests.yml
+
+  run-stability:
+    uses: ./.github/workflows/stability.yml
+
+  build:
+    needs: [determine-environment, run-tests, run-stability]
+    runs-on: ubuntu-big
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Update version for dev/pre-prod
+        if: ${{ needs.determine-environment.outputs.version_suffix != '' }}
+        run: |
+          # Read current version from pyproject.toml
+          CURRENT_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          NEW_VERSION="${CURRENT_VERSION}${{ needs.determine-environment.outputs.version_suffix }}"
+          
+          # Update pyproject.toml
+          sed -i "s/^version = .*/version = \"$NEW_VERSION\"/" pyproject.toml
+          
+          # Update __init__.py
+          sed -i "s/__version__ = .*/__version__ = \"$NEW_VERSION\"/" src/surrealdb/__init__.py
+          
+          echo "Updated version to: $NEW_VERSION"
+
+      - name: Build package
+        run: |
+          python -m build
+
+      - name: Check package
+        run: |
+          twine check dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    needs: [determine-environment, build]
+    if: ${{ needs.determine-environment.outputs.should_publish == 'true' }}
+    runs-on: ubuntu-big
+    environment:
+      name: ${{ needs.determine-environment.outputs.environment }}
+      url: ${{ needs.determine-environment.outputs.pypi_url }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish to PyPI (Production)
+        if: ${{ needs.determine-environment.outputs.environment == 'production' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Publish to Test PyPI (Dev/Pre-prod)
+        if: ${{ needs.determine-environment.outputs.environment != 'production' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  post-publish-validation:
+    needs: [determine-environment, publish]
+    runs-on: ubuntu-big
+    steps:
+      - name: Wait for package availability
+        run: sleep 30
+
+      - name: Setup Python for testing
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Test package installation
+        run: |
+          if [[ "${{ needs.determine-environment.outputs.environment }}" == "production" ]]; then
+            # Test installation from PyPI
+            pip install surrealdb --no-cache-dir
+          else
+            # Test installation from Test PyPI
+            pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ surrealdb --no-cache-dir
+          fi
+
+      - name: Test package import
+        run: |
+          python -c "import surrealdb; print(f'Successfully imported surrealdb version: {surrealdb.__version__}')"
