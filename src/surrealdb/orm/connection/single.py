@@ -3,7 +3,7 @@ Single connection wrapper with retry logic for SurrealDB ORM.
 """
 
 import asyncio
-from typing import Callable, Any, Union, Optional
+from typing import Callable, Any, Union
 from surrealdb.connections.async_http import AsyncHttpSurrealConnection
 from surrealdb.connections.blocking_http import BlockingHttpSurrealConnection
 from surrealdb.connections.async_ws import AsyncWsSurrealConnection

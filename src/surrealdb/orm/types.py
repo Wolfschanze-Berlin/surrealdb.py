@@ -2,10 +2,9 @@
 Type definitions and aliases for SurrealDB ORM.
 """
 
-from typing import TypeVar, Union, Dict, List, Any, Optional, Protocol, runtime_checkable
+from typing import TypeVar, Union, Dict, List, Any, Protocol, runtime_checkable
 from dataclasses import dataclass
 from surrealdb.data.types.record_id import RecordID
-from surrealdb.data.types.table import Table
 
 # Type variables
 T = TypeVar('T', bound='BaseModel')

@@ -3,7 +3,7 @@ Centralized logging configuration for SurrealDB ORM using loguru.
 """
 
 import sys
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from loguru import logger
 
 

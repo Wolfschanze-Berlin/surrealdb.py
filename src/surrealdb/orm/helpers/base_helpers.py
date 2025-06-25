@@ -2,7 +2,7 @@
 Base helper functionality for SurrealDB ORM CRUD operations.
 """
 
-from typing import Union, Dict, Any, List
+from typing import Union, Dict, Any
 from surrealdb.data.types.record_id import RecordID
 from surrealdb.data.types.table import Table
 
